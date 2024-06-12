@@ -10,4 +10,8 @@ router.post("/google", authController.google);
 
 router.post("/refresh-token", authController.refreshAccessToken);
 
+router.post("/send-email-verification", authController.sendEmailVerification);
+
+router.post("/verify-email", authController.verifyEmail);
+
 export default router;

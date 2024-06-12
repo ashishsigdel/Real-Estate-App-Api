@@ -1,6 +1,5 @@
 import User from "../models/user.model.js";
 import { errorHandler } from "../utils/error.js";
-import jwt from "jsonwebtoken";
 import {
   comparePassword,
   hashPassword,
@@ -14,6 +13,8 @@ import {
   verifyToken,
 } from "../utils/jwtUtils.js";
 import RefreshToken from "../models/refreshToken.model.js";
+import EmailVerification from "../models/emailVerification.model.js";
+import { generateOTP } from "../utils/otpUtils.js";
 
 //signup
 export const signup = async (req, res, next) => {
@@ -294,6 +295,157 @@ export const refreshAccessToken = async (req, res, next) => {
   } catch (error) {
     next(error);
   }
+};
+
+//send email verification
+export const sendEmailVerification = async (req, res, next) => {
+  const { email } = req.body;
+
+  const user = await User.findOne({ email });
+  if (!user) {
+    return next(errorHandler(404, "User not found."));
+  }
+
+  //check if user email is verified
+  if (user.isEmailVerified) {
+    return next(errorHandler(400, "Email already verified."));
+  }
+
+  //check if user has exceeded max attempts
+  const now = new Date();
+
+  // get latest email verification record
+  const emailVerification = await EmailVerification.findOne({
+    userId: user._id,
+    verifiedAt: null,
+  })
+    .sort({ createdAt: -1 })
+    .exec();
+
+  // check if the latest email verification is less than 1 minute old
+  if (
+    emailVerification &&
+    emailVerification.createdAt > new Date(now - 60 * 1000) // 1 minute
+  ) {
+    return next(
+      errorHandler(
+        429,
+        "Please wait for 1 minute before requesting another otp."
+      )
+    );
+  }
+
+  //generate otp
+  const otp = generateOTP(6);
+  console.log(otp);
+
+  const hashedOtp = await hashPassword(otp);
+  const currentDate = new Date();
+
+  //set all previous otps to expired
+  await EmailVerification.updateMany(
+    { userId: user._id, verifiedAt: null },
+    {
+      $set: { verifiedAt: currentDate },
+    },
+    { new: true }
+  );
+
+  //save otp to db
+  await EmailVerification.create({
+    userId: user._id,
+    otp: hashedOtp,
+    expiresIn: new Date(Date.now() + 5 * 60 * 1000), //expires in 5 minutes
+  });
+
+  //send email verification
+
+  //send response
+  res.status(201).json("OTP sent successfully..");
+};
+
+export const verifyEmail = async (req, res, next) => {
+  const { email, otp } = req.body;
+
+  //get user
+  const user = await User.findOne({ email });
+
+  if (!user) {
+    return next(errorHandler(404, "User not found."));
+  }
+
+  //check if user email is verified
+  if (user.isEmailVerified) {
+    return next(errorHandler(400, "Email already verified."));
+  }
+
+  // get latest email verification record
+  const emailVerification = await EmailVerification.findOne({
+    userId: user._id,
+  })
+    .sort({ createdAt: -1 })
+    .exec();
+
+  if (!emailVerification) {
+    return next(errorHandler(404, "Invalid OTP."));
+  }
+
+  // check if attempts is greater than 5
+  if (emailVerification.attempts >= 5) {
+    return next(
+      errorHandler(429, "Too many attempts. Please try again later.")
+    );
+  }
+
+  //increase attempts by 1
+  await EmailVerification.findByIdAndUpdate(
+    emailVerification._id,
+    {
+      $inc: { attempts: 1 },
+    },
+    { new: true }
+  );
+
+  //check if otp is already verified
+  if (emailVerification.verifiedAt) {
+    return next(errorHandler(401, "OTP Already Used."));
+  }
+
+  //check if otp is expired
+  if (emailVerification.expiresAt < new Date()) {
+    return next(errorHandler(400, "Invalid OTP."));
+  }
+
+  //check if otp is valid
+  const isOtpValid = await comparePassword(otp, emailVerification.otp);
+
+  if (!isOtpValid) {
+    return next(errorHandler(404, "Invalid OTP."));
+  }
+
+  //update otp verifiedAt
+  await EmailVerification.findByIdAndUpdate(
+    emailVerification._id,
+    {
+      $set: {
+        verifiedAt: new Date(),
+      },
+    },
+    { new: true }
+  );
+
+  //update user last login, isEmailVerified, isEnabled
+  await User.findByIdAndUpdate(
+    user._id,
+    {
+      $set: {
+        isEmailVerified: true,
+      },
+    },
+    { new: true }
+  );
+
+  res.status(201).json("Email verified successfully..");
 };
 
 export const signOut = (req, res, next) => {
