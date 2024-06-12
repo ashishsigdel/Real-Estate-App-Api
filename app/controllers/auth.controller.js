@@ -6,6 +6,11 @@ import {
   hashPassword,
   validatePassword,
 } from "../services/passwordService.js";
+import {
+  generateAccessToken,
+  generateRefreshToken,
+} from "../utils/jwtUtils.js";
+import RefreshToken from "../models/refreshToken.model.js";
 
 //signup
 export const signup = async (req, res, next) => {
@@ -80,20 +85,52 @@ export const signup = async (req, res, next) => {
 //signIn
 export const signin = async (req, res, next) => {
   const { email, password } = req.body;
+
+  if (!email) {
+    return next(errorHandler(400, "Email is required."));
+  }
+  if (!password) {
+    return next(errorHandler(400, "Password is required."));
+  }
+
   try {
     const validUser = await User.findOne({ email });
     if (!validUser) return next(errorHandler(404, "User not found !"));
 
-    const validPassword = comparePassword(password, validUser.password);
+    const validPassword = await comparePassword(password, validUser.password);
     if (!validPassword)
       return next(errorHandler(401, "Password is incorrect!"));
 
-    const token = jwt.sign({ id: validUser._id }, process.env.JWT_SECRET);
-    const { password: pass, ...rest } = validUser._doc;
+    // generate refresh token
+    const refreshToken = generateRefreshToken({
+      userId: validUser._id,
+    });
+
+    // save refresh token
+    const savedRefreshToken = await RefreshToken.create({
+      token: refreshToken,
+      userId: validUser._id,
+      expiresIn: new Date(
+        Date.now() + parseInt(process.env.JWT_REFRESH_EXPIRES_IN) * 60 * 1000
+      ), // converts minutes to milliseconds and add to current date
+    });
+
+    // generate access token
+    const accessToken = generateAccessToken({
+      userId: validUser.id,
+      refreshTokenId: savedRefreshToken._id,
+    });
+
+    const { password: pass, ...user } = validUser._doc;
+    let responseData = {
+      accessToken,
+      user,
+    };
+
     res
-      .cookie("access_token", token, { httpOnly: true })
+      .cookie("accessToken", accessToken, { httpOnly: true })
       .status(200)
-      .json(rest);
+      .json(responseData);
   } catch (error) {
     next(error);
   }
