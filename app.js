@@ -3,6 +3,7 @@ import { createServer } from "http";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import { dbConnect } from "./app/config/dbConnect.js";
+import APIRoute from "./app/routes/index.js";
 
 const app = express();
 
@@ -21,9 +22,7 @@ app.use(
 
 dbConnect();
 
-app.use("/api", (req, res) => {
-  res.json({ message: "Welcome to API" });
-});
+app.use("/api", APIRoute);
 
 app.use((err, req, res, next) => {
   const statusCode = err.statusCode || 500;
