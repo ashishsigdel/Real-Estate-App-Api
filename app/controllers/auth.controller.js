@@ -9,6 +9,9 @@ import {
 import {
   generateAccessToken,
   generateRefreshToken,
+  getAuthToken,
+  getCookieToken,
+  verifyToken,
 } from "../utils/jwtUtils.js";
 import RefreshToken from "../models/refreshToken.model.js";
 
@@ -222,6 +225,72 @@ export const google = async (req, res, next) => {
         .status(200)
         .json(responseData);
     }
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Refresh access token
+ * @example /auth/refresh-token
+ *       body: {}
+ *       headers:
+ *          {
+ *            "Authorization": "Bearer <expired_access_token>",
+ *          }
+ */
+export const refreshAccessToken = async (req, res, next) => {
+  const token = getCookieToken(req) || getAuthToken(req);
+
+  if (!token) {
+    return next(errorHandler(401, "Unauthorized."));
+  }
+
+  //verify token
+  try {
+    const decodedToken = verifyToken({
+      token: token,
+      ignoreExpiration: true,
+    });
+
+    //get refresh token from db
+    const refreshToken = await RefreshToken.findOne({
+      _id: decodedToken.rfId,
+      userId: decodedToken.id,
+    });
+
+    if (!refreshToken) {
+      return next(errorHandler(401, "Unauthorized."));
+    }
+
+    // verify refresh token
+    verifyToken({
+      token: refreshToken.token,
+    });
+
+    //get user from db
+    const user = await User.findOne({ _id: decodedToken.id });
+
+    if (!user) {
+      return next(errorHandler(401, "Unauthorized."));
+    }
+
+    //generate access token
+    const accessToken = generateAccessToken({
+      userId: user._id,
+      refreshTokenId: refreshToken._id,
+    });
+
+    let responseData = {
+      accessToken,
+      user,
+      message: "Access token refreshed successfully",
+    };
+
+    res
+      .cookie("accessToken", accessToken, { httpOnly: true })
+      .status(200)
+      .json(responseData);
   } catch (error) {
     next(error);
   }
