@@ -282,9 +282,11 @@ export const refreshAccessToken = async (req, res, next) => {
       refreshTokenId: refreshToken._id,
     });
 
+    const { password: pass, ...rest } = user._doc;
+
     let responseData = {
       accessToken,
-      user,
+      user: rest,
       message: "Access token refreshed successfully",
     };
 
@@ -448,10 +450,42 @@ export const verifyEmail = async (req, res, next) => {
   res.status(201).json("Email verified successfully..");
 };
 
-export const signOut = (req, res, next) => {
+export const logout = async (req, res, next) => {
+  const token = getCookieToken(req) || getAuthToken(req);
+
+  if (!token) {
+    return next(errorHandler(401, "Unauthorized."));
+  }
+
+  //verify token
   try {
-    res.clearCookie("access_token");
-    res.status(200).json("User has been logged out!");
+    const decodedToken = verifyToken({
+      token: token,
+      ignoreExpiration: true,
+    });
+
+    //get refresh token from db
+    const refreshToken = await RefreshToken.findOne({
+      _id: decodedToken.rfId,
+      userId: decodedToken.id,
+    });
+
+    if (!refreshToken) {
+      return next(errorHandler(401, "Unauthorized."));
+    }
+
+    // verify refresh token
+    verifyToken({
+      token: refreshToken.token,
+    });
+
+    //delete refresh token
+    await RefreshToken.findByIdAndDelete({ _id: refreshToken._id });
+
+    //delete token from cookie
+    res.clearCookie("accessToken");
+
+    return next(errorHandler(201, "User logged out successfully."));
   } catch (error) {
     next(error);
   }

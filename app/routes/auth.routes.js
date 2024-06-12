@@ -14,4 +14,6 @@ router.post("/send-email-verification", authController.sendEmailVerification);
 
 router.post("/verify-email", authController.verifyEmail);
 
+router.post("/sign-out", authController.logout);
+
 export default router;
