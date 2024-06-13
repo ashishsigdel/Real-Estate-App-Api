@@ -4,6 +4,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import { dbConnect } from "./app/config/dbConnect.js";
 import APIRoute from "./app/routes/index.js";
+import { errorHandler } from "./app/utils/error.js";
 
 const app = express();
 
@@ -23,6 +24,10 @@ app.use(
 dbConnect();
 
 app.use("/api", APIRoute);
+
+app.use("*", (req, res, next) => {
+  return next(errorHandler(404, "Request not found."));
+});
 
 app.use((err, req, res, next) => {
   const statusCode = err.statusCode || 500;
