@@ -15,6 +15,7 @@ import {
 import RefreshToken from "../models/refreshToken.model.js";
 import EmailVerification from "../models/emailVerification.model.js";
 import { generateOTP } from "../utils/otpUtils.js";
+import UserProfile from "../models/userProfile.model.js";
 
 //signup
 export const signup = async (req, res, next) => {
@@ -71,15 +72,21 @@ export const signup = async (req, res, next) => {
   }
 
   const newUser = new User({
+    email,
+    password: hashedPassword,
+  });
+
+  const newProfile = new UserProfile({
+    userId: newUser._id,
     fullName,
     username,
     email,
     phone,
-    password: hashedPassword,
   });
 
   try {
     await newUser.save();
+    await newProfile.save();
     res.status(201).json("User created successfully..");
   } catch (error) {
     next(error);
@@ -282,11 +289,11 @@ export const refreshAccessToken = async (req, res, next) => {
       refreshTokenId: refreshToken._id,
     });
 
-    const { password: pass, ...rest } = user._doc;
+    const userProfile = await UserProfile.findOne({ userId: user._id });
 
     let responseData = {
       accessToken,
-      user: rest,
+      user: userProfile,
       message: "Access token refreshed successfully",
     };
 
