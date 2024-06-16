@@ -13,14 +13,7 @@ const FileStorageDirectory = {
   FILE_UPLOAD_PATH: "public",
   TEMP: "temp",
   USER_IMAGES: "user-images",
-  CHAPTER_COMITTEE_IMAGES: "chapter-comittee-images",
-  EVENT_IMAGES: "event-images",
-  CHAPTER_IMAGES: "chapter-images",
-  NEWS_IMAGES: "news-images",
-  INVOICES: "invoices",
   FEATURE_IMAGE: "feature-images",
-  EVENT_DOCUMENTS: "event-documents",
-  GALLERY: "gallery",
 };
 
 export default FileStorageDirectory;

@@ -14,4 +14,6 @@ router.put(
   userController.updateProfile
 );
 
+router.get("/profile", authMiddleware, userController.fetchCurrentUser);
+
 export default router;

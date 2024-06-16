@@ -14,6 +14,22 @@ export const uploadsDir = path.join(
 );
 
 /**
+ * @function removeLocalFile
+ * @description Remove local file from uploads directory
+ * @param {string} directory - Directory name
+ * @param {string} fileName - File name
+ */
+export const removeLocalFile = (directory, fileName) => {
+  const filePath = path.join(uploadsDir, directory, fileName);
+
+  if (fs.existsSync(filePath)) {
+    fs.unlink(filePath, (err) => {
+      console.log(err);
+    });
+  }
+};
+
+/**
  * @function multerStorage
  * @description Multer storage
  * @param {string} directory - Directory name to store file
