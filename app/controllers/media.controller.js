@@ -48,3 +48,7 @@ export const updateMediaWithCopy = async ({ currentMedia }) => {
   currentMedia.fileName = newFileName;
   await currentMedia.save();
 };
+
+export const generateFileUrl = ({ directory, fileName }) => {
+  return `${process.env.WEB_URL}/${directory}/${fileName}`;
+};
