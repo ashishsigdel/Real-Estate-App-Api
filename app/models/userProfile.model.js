@@ -35,6 +35,10 @@ const userProfileSchema = mongoose.Schema(
     profilePictureId: {
       type: String,
     },
+    isEmailVerified: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );
