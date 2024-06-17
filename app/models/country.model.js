@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const countrySchema = mongoose.Schema(
   {
-    country: {
+    name: {
       type: String,
       required: true,
       unique: true,
