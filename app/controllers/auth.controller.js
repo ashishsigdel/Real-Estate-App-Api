@@ -483,7 +483,7 @@ export const verifyEmail = async (req, res, next) => {
     { new: true }
   );
 
-  await UserProfile.findAndUpdate(
+  await UserProfile.findOneAndUpdate(
     { userId: user._id },
     {
       $set: {
