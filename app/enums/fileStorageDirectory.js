@@ -12,6 +12,7 @@
 const FileStorageDirectory = {
   FILE_UPLOAD_PATH: "public",
   TEMP: "temp",
+  POST: "post",
   USER_IMAGES: "user-images",
   FEATURE_IMAGE: "feature-images",
 };

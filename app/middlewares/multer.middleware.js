@@ -25,3 +25,33 @@ export const uploadImageMiddleware = ({ directory, sizeInMb = 10 }) => {
     },
   });
 };
+
+export const uploadImageVideoMiddleware = ({ directory, sizeInMb = 50 }) => {
+  return multer({
+    storage: multerDiskStorage(directory),
+    limits: {
+      fileSize: sizeInMb * 1024 * 1024, // default 50 MB
+    },
+    fileFilter: (req, file, cb) => {
+      if (
+        getMimeType(file.originalname).startsWith("image") ||
+        getMimeType(file.originalname).startsWith("video")
+      ) {
+        //accept image files
+        cb(null, true);
+      } else {
+        cb(
+          new ApiError({
+            status: 400,
+            message: "Only image and video files are allowed",
+            errors: [
+              {
+                file: "Only image and video files are allowed",
+              },
+            ],
+          })
+        );
+      }
+    },
+  });
+};
