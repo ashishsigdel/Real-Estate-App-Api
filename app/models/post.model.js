@@ -4,40 +4,40 @@ const postSchema = mongoose.Schema(
   {
     title: {
       type: String,
-      required: true,
+      // required: true,
     },
     description: {
       type: String,
-      required: true,
+      // required: true,
     },
-    featureImages: {
+    featureImagesId: {
       type: Array,
-      required: true,
+      // required: true,
     },
     categoryId: {
       type: String,
-      required: true,
+      // required: true,
     },
     countryId: {
       type: String,
-      required: true,
+      // required: true,
       defalut: "Nepal",
     },
     city: {
       type: String,
-      required: true,
+      // required: true,
     },
     address: {
       type: String,
-      required: true,
+      // required: true,
     },
     userId: {
       type: String,
-      required: true,
+      // required: true,
     },
-    Price: {
+    price: {
       type: Number,
-      required: true,
+      // required: true,
     },
     discountStatus: {
       type: Boolean,
