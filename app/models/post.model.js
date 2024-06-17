@@ -1,55 +1,51 @@
 import mongoose from "mongoose";
 
-const postSchema = mongoose.Schema(
+const postSchema = new mongoose.Schema(
   {
     title: {
       type: String,
-      // required: true,
+      required: true,
     },
     description: {
       type: String,
-      // required: true,
+      required: true,
     },
     featureImagesId: {
       type: Array,
-      // required: true,
+      required: true,
     },
     categoryId: {
-      type: String,
-      // required: true,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "PostCategory",
+      required: true,
     },
     countryId: {
-      type: String,
-      // required: true,
-      defalut: "Nepal",
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Country",
+      required: true,
     },
     city: {
       type: String,
-      // required: true,
+      required: true,
     },
     address: {
       type: String,
-      // required: true,
+      required: true,
     },
     userId: {
-      type: String,
-      // required: true,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
     },
-    price: {
-      type: Number,
-      // required: true,
-    },
+    price: Number,
     discountStatus: {
       type: Boolean,
-      required: true,
       default: false,
     },
-    discountPrice: {
-      type: Number,
-    },
+    discountPrice: Number,
     status: {
       type: String,
-      required: true,
+      required: true, // Fixed typo
       enum: ["draft", "published"],
       default: "draft",
     },

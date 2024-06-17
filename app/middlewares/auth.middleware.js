@@ -63,3 +63,44 @@ export const authMiddleware = async (req, res, next) => {
     next(error);
   }
 };
+
+export const authCheckMiddleware = async (req, res, next) => {
+  try {
+    const accessToken = getCookieToken(req) || getAuthToken(req);
+
+    if (!accessToken) {
+      return next();
+    }
+
+    const decodedToken = verifyToken({
+      token: accessToken,
+    });
+
+    const refreshToken = await RefreshToken.findOne({
+      _id: decodedToken.rfId,
+      userId: decodedToken.id,
+    });
+
+    if (
+      !refreshToken ||
+      refreshToken.revoked ||
+      refreshToken.expiresAt < Date.now()
+    ) {
+      return next();
+    }
+
+    verifyToken({ token: refreshToken.token });
+
+    const user = await User.findOne({ _id: decodedToken.id })
+      .select("-password -createdAt -updatedAt")
+      .exec();
+
+    if (user && user.isEmailVerified) {
+      req.user = user;
+    }
+
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
