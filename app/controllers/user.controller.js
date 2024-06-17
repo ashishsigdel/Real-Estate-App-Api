@@ -93,7 +93,7 @@ export const fetchCurrentUser = async (req, res, next) => {
   if (userProfile.profilePictureId) {
     const media = await Media.findById(userProfile.profilePictureId);
     if (media) {
-      profilePictureUrl = media.url; // `url` is a virtual property
+      profilePictureUrl = media.url;
     }
   }
 

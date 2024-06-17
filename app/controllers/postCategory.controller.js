@@ -3,7 +3,6 @@ import { errorHandler } from "../utils/error.js";
 
 export const createPostCategory = async (req, res, next) => {
   const { name } = req.body;
-  console.log(name);
 
   if (!name) {
     return next(errorHandler(400, "Category name is required."));
