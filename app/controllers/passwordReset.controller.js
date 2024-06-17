@@ -1,12 +1,15 @@
 import PasswordReset from "../models/passwordReset.model.js";
 import RefreshToken from "../models/refreshToken.model.js";
 import User from "../models/user.model.js";
+import UserProfile from "../models/userProfile.model.js";
+import { sendEmail } from "../services/emailService.js";
 import {
   comparePassword,
   hashPassword,
   validatePassword,
 } from "../services/passwordService.js";
 import { errorHandler } from "../utils/error.js";
+import { getOtpTemplate } from "../utils/htmlTemplateUtils.js";
 import { generateOTP } from "../utils/otpUtils.js";
 import { v4 as uuidv4 } from "uuid";
 
@@ -49,12 +52,13 @@ export const forgotPassword = async (req, res, next) => {
     passwordReset &&
     passwordReset.createdAt > new Date(now - 60 * 1000) // 1 minute
   ) {
-    return next(errorHandler(429, "Too many attempts. Please try again later"));
+    return next(
+      errorHandler(429, "Please wait for 1 minute for another request.")
+    );
   }
 
   //generate otp
   const otp = generateOTP(6);
-  console.log(otp);
 
   // generate reset token
   const resetToken = uuidv4();
@@ -82,6 +86,32 @@ export const forgotPassword = async (req, res, next) => {
   });
 
   //send otp to user email
+  const userProfile = await UserProfile.findOne({ userId: user._id });
+  try {
+    const formattedDate = new Date().toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+
+    const emailContent = getOtpTemplate({
+      date: formattedDate,
+      name: userProfile.fullName,
+      description:
+        "Please use the One Time Password (OTP) provided below to reset your password:",
+      otp: otp,
+    });
+
+    const data = {
+      to: email,
+      subject: "Reset Password",
+      html: emailContent,
+    };
+
+    await sendEmail(data);
+  } catch (error) {
+    console.log(error);
+  }
 
   //send response
 

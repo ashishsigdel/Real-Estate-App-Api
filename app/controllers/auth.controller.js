@@ -16,6 +16,8 @@ import RefreshToken from "../models/refreshToken.model.js";
 import EmailVerification from "../models/emailVerification.model.js";
 import { generateOTP } from "../utils/otpUtils.js";
 import UserProfile from "../models/userProfile.model.js";
+import { getOtpTemplate } from "../utils/htmlTemplateUtils.js";
+import { sendEmail } from "../services/emailService.js";
 
 //signup
 export const signup = async (req, res, next) => {
@@ -63,7 +65,7 @@ export const signup = async (req, res, next) => {
   const hashedPassword = await hashPassword(password);
 
   let username = email.split("@")[0];
-  const alreadyUsernameExist = await User.findOne({ username });
+  const alreadyUsernameExist = await UserProfile.findOne({ username });
   if (alreadyUsernameExist) {
     const generatedUsername =
       fullName.split(" ").join("").toLowerCase() +
@@ -311,6 +313,7 @@ export const sendEmailVerification = async (req, res, next) => {
   const { email } = req.body;
 
   const user = await User.findOne({ email });
+  const userProfile = await UserProfile.findOne({ userId: user._id });
   if (!user) {
     return next(errorHandler(404, "User not found."));
   }
@@ -346,7 +349,6 @@ export const sendEmailVerification = async (req, res, next) => {
 
   //generate otp
   const otp = generateOTP(6);
-  console.log(otp);
 
   const hashedOtp = await hashPassword(otp);
   const currentDate = new Date();
@@ -368,6 +370,31 @@ export const sendEmailVerification = async (req, res, next) => {
   });
 
   //send email verification
+  try {
+    const formattedDate = new Date().toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+
+    const emailContent = getOtpTemplate({
+      date: formattedDate,
+      name: userProfile.fullName,
+      description:
+        "Please use the One Time Password (OTP) provided below to verify your email address:",
+      otp: otp,
+    });
+
+    const data = {
+      to: email,
+      subject: "Email verification",
+      html: emailContent,
+    };
+
+    await sendEmail(data);
+  } catch (error) {
+    console.log(error);
+  }
 
   //send response
   res.status(201).json("OTP sent successfully..");
@@ -382,6 +409,8 @@ export const verifyEmail = async (req, res, next) => {
   if (!user) {
     return next(errorHandler(404, "User not found."));
   }
+
+  const userProfile = await UserProfile.findOne({ userId: user._id });
 
   //check if user email is verified
   if (user.isEmailVerified) {
@@ -443,9 +472,19 @@ export const verifyEmail = async (req, res, next) => {
     { new: true }
   );
 
-  //update user last login, isEmailVerified, isEnabled
+  //update user and userprofile isEmailVerified
   await User.findByIdAndUpdate(
     user._id,
+    {
+      $set: {
+        isEmailVerified: true,
+      },
+    },
+    { new: true }
+  );
+
+  await UserProfile.findAndUpdate(
+    { userId: user._id },
     {
       $set: {
         isEmailVerified: true,
