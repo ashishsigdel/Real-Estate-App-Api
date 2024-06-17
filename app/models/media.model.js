@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import MediaType from "../enums/mediaType.js";
+import { generateFileUrl } from "../controllers/media.controller.js";
 
 const mediaSchema = mongoose.Schema(
   {

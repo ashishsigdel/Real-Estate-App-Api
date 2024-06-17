@@ -1,5 +1,6 @@
 import FileStorageDirectory from "../enums/fileStorageDirectory.js";
 import MediaType from "../enums/mediaType.js";
+import Media from "../models/media.model.js";
 import User from "../models/user.model.js";
 import UserProfile from "../models/userProfile.model.js";
 import { errorHandler } from "../utils/error.js";
@@ -83,9 +84,26 @@ export const fetchCurrentUser = async (req, res, next) => {
 
   const userProfile = await UserProfile.findOne({ userId: user._id });
 
+  if (!userProfile) {
+    return res.status(404).json({ message: "User profile not found" });
+  }
+
+  let profilePictureUrl = null;
+
+  if (userProfile.profilePictureId) {
+    const media = await Media.findById(userProfile.profilePictureId);
+    if (media) {
+      profilePictureUrl = media.url; // `url` is a virtual property
+    }
+  }
+
+  //append profilepicture url also inside userprofile object
+  const userProfileData = userProfile.toObject();
+  userProfileData.profilePicture = profilePictureUrl;
+
   try {
     let responseData = {
-      user: userProfile,
+      user: userProfileData,
       message: "User profile fetched successfully",
     };
 
