@@ -4,6 +4,7 @@ import Media from "../models/media.model.js";
 import User from "../models/user.model.js";
 import UserProfile from "../models/userProfile.model.js";
 import { errorHandler } from "../utils/error.js";
+import { getUrlFromFirebase } from "../utils/firebaseUtils.js";
 import { createMedia, deleteMediaById } from "./media.controller.js";
 
 export const updateProfile = async (req, res, next) => {
@@ -25,6 +26,8 @@ export const updateProfile = async (req, res, next) => {
     });
 
     if (profilePicture) {
+      const imageUrl = await getUrlFromFirebase(profilePicture);
+
       if (userProfile.profilePictureId) {
         //delete old profile picture
         await deleteMediaById(userProfile.profilePictureId);
@@ -35,6 +38,7 @@ export const updateProfile = async (req, res, next) => {
         file: profilePicture,
         user,
         mediaType: MediaType.IMAGE,
+        fileUrl: imageUrl,
       });
 
       profilePicture = media._id;
