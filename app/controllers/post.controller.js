@@ -11,6 +11,8 @@ import {
   generateFileUrl,
 } from "./media.controller.js";
 import Media from "../models/media.model.js";
+import { getUrlFromFirebase } from "../utils/firebaseUtils.js";
+import { removeLocalFile } from "../services/fileStorageService.js";
 
 export const createPost = async (req, res, next) => {
   const user = req.user;
@@ -86,18 +88,14 @@ export const createPost = async (req, res, next) => {
     }
 
     // Upload media files
-    const mediaIds = [];
+    const medias = [];
 
     if (mediaFiles) {
       for (const file of mediaFiles) {
-        const media = await createMedia({
-          directory: FileStorageDirectory.POST,
-          file: file,
-          user: user,
-          mediaType: getMediaTypeFromFileName(file.filename),
-        });
+        const imageUrl = await getUrlFromFirebase(file);
+        removeLocalFile(FileStorageDirectory.POST, file.filename);
 
-        mediaIds.push(media._id);
+        medias.push(imageUrl);
       }
     }
 
@@ -106,7 +104,7 @@ export const createPost = async (req, res, next) => {
     const post = await Post.create({
       title,
       description,
-      featureImagesId: mediaIds,
+      featureImages: medias,
       categoryId: category,
       countryId: country,
       city,
@@ -157,7 +155,7 @@ export const updatePost = async (req, res, next) => {
 
   // Validate postId
   if (!mongoose.Types.ObjectId.isValid(postId)) {
-    return next(errorHandler(400, "This Post doesnot exists."));
+    return next(errorHandler(400, "This Post does not exist."));
   }
 
   try {
@@ -172,19 +170,14 @@ export const updatePost = async (req, res, next) => {
       );
     }
 
-    // Upload media files
-    const mediaIds = validatePost.featureImagesId || [];
+    // Upload new media files
+    const medias = [...validatePost.featureImages]; // Start with existing media files
 
-    if (mediaFiles) {
+    if (mediaFiles && mediaFiles.length > 0) {
       for (const file of mediaFiles) {
-        const media = await createMedia({
-          directory: FileStorageDirectory.POST,
-          file: file,
-          user: user,
-          mediaType: getMediaTypeFromFileName(file.filename),
-        });
-
-        mediaIds.push(media._id);
+        const imageUrl = await getUrlFromFirebase(file);
+        removeLocalFile(FileStorageDirectory.POST, file.filename);
+        medias.push(imageUrl); // Append new media files
       }
     }
 
@@ -198,7 +191,7 @@ export const updatePost = async (req, res, next) => {
     const updatedPostData = {
       title,
       description,
-      featureImagesId: mediaIds,
+      featureImages: medias,
       categoryId: category,
       countryId: country,
       city,
@@ -250,13 +243,6 @@ export const deletePost = async (req, res, next) => {
         errorHandler(403, "You are not authorized to delete this post")
       );
     }
-
-    // delete media from post
-    if (Array.isArray(validatePost.featureImagesId)) {
-      for (const mediaId of validatePost.featureImagesId) {
-        await deleteMediaById(mediaId);
-      }
-    }
     await Post.findByIdAndDelete({ _id: postId });
 
     res.status(201).json({ message: "Product delete successfully." });
@@ -286,21 +272,7 @@ export const getPost = async (req, res, next) => {
       }
     }
 
-    const mediaUrls = [];
-    if (Array.isArray(validatePost.featureImagesId)) {
-      for (const mediaId of validatePost.featureImagesId) {
-        const media = await Media.findById(mediaId);
-        if (media) {
-          const mediaUrl = generateFileUrl({
-            directory: media.path,
-            fileName: media.fileName,
-          });
-          mediaUrls.push(mediaUrl);
-        }
-      }
-    }
-
-    res.status(200).json({ post: validatePost, mediaUrls: mediaUrls });
+    res.status(200).json({ post: validatePost });
   } catch (error) {
     next(error);
   }
@@ -317,27 +289,7 @@ export const getAllPostsByCretor = async (req, res, next) => {
       .limit(limit)
       .skip(startIndex);
 
-    const postsWithMediaUrls = [];
-
-    for (const post of posts) {
-      const mediaUrls = [];
-      if (Array.isArray(post.featureImagesId)) {
-        for (const mediaId of post.featureImagesId) {
-          const media = await Media.findById(mediaId);
-          if (media) {
-            const mediaUrl = generateFileUrl({
-              directory: media.path,
-              fileName: media.fileName,
-            });
-            mediaUrls.push(mediaUrl);
-          }
-        }
-      }
-
-      postsWithMediaUrls.push({ post, mediaUrls });
-    }
-
-    res.status(200).json({ posts: postsWithMediaUrls });
+    res.status(200).json({ posts });
   } catch (error) {
     next(error);
   }
@@ -357,7 +309,6 @@ export const getAllPosts = async (req, res, next) => {
     }
 
     const searchTerm = req.query.searchTerm || "";
-
     const sort = req.query.sort || "createdAt";
     const order = req.query.order || "desc";
 
@@ -368,11 +319,16 @@ export const getAllPosts = async (req, res, next) => {
     const maxPrice = parseInt(req.query.maxPrice);
     const categoryId = req.query.categoryId;
 
+    // Build the query
     const query = {
       $and: [
         { status: "published" },
-        { title: { $regex: searchTerm, $options: "i" } },
-        { description: { $regex: searchTerm, $options: "i" } },
+        {
+          $or: [
+            { title: { $regex: searchTerm, $options: "i" } },
+            { description: { $regex: searchTerm, $options: "i" } },
+          ],
+        },
         { discountStatus },
       ],
     };
@@ -406,27 +362,7 @@ export const getAllPosts = async (req, res, next) => {
       .limit(limit)
       .skip(startIndex);
 
-    const postsWithMediaUrls = [];
-
-    for (const post of posts) {
-      const mediaUrls = [];
-      if (Array.isArray(post.featureImagesId)) {
-        for (const mediaId of post.featureImagesId) {
-          const media = await Media.findById(mediaId);
-          if (media) {
-            const mediaUrl = generateFileUrl({
-              directory: media.path,
-              fileName: media.fileName,
-            });
-            mediaUrls.push(mediaUrl);
-          }
-        }
-      }
-
-      postsWithMediaUrls.push({ post, mediaUrls });
-    }
-
-    res.status(200).json({ posts: postsWithMediaUrls });
+    res.status(200).json({ posts });
   } catch (error) {
     next(error);
   }

@@ -32,7 +32,7 @@ const userProfileSchema = mongoose.Schema(
     dob: {
       type: Date,
     },
-    profilePictureId: {
+    profilePicture: {
       type: String,
     },
     isEmailVerified: {

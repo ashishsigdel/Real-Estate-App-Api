@@ -1,11 +1,9 @@
 import FileStorageDirectory from "../enums/fileStorageDirectory.js";
-import MediaType from "../enums/mediaType.js";
-import Media from "../models/media.model.js";
 import User from "../models/user.model.js";
 import UserProfile from "../models/userProfile.model.js";
+import { removeLocalFile } from "../services/fileStorageService.js";
 import { errorHandler } from "../utils/error.js";
 import { getUrlFromFirebase } from "../utils/firebaseUtils.js";
-import { createMedia, deleteMediaById } from "./media.controller.js";
 
 export const updateProfile = async (req, res, next) => {
   try {
@@ -25,35 +23,29 @@ export const updateProfile = async (req, res, next) => {
       userId: user._id,
     });
 
+    let imageUrl;
     if (profilePicture) {
-      const imageUrl = await getUrlFromFirebase(profilePicture);
-
-      if (userProfile.profilePictureId) {
-        //delete old profile picture
-        await deleteMediaById(userProfile.profilePictureId);
-      }
-
-      const media = await createMedia({
-        directory: FileStorageDirectory.USER_IMAGES,
-        file: profilePicture,
-        user,
-        mediaType: MediaType.IMAGE,
-        fileUrl: imageUrl,
-      });
-
-      profilePicture = media._id;
+      imageUrl = await getUrlFromFirebase(profilePicture);
+      removeLocalFile(
+        FileStorageDirectory.USER_IMAGES,
+        profilePicture.filename
+      );
     }
+
+    // Remove the local file after uploading to Firebase
 
     const updatedFields = {
       fullName,
       phone,
       gender,
       dob,
-      profilePictureId: profilePicture,
+      profilePicture: imageUrl,
     };
 
     if (username) {
-      const alreadyUsernameExist = await User.findOne({ username });
+      const alreadyUsernameExist = await UserProfile.findOne({
+        username: username,
+      });
 
       if (alreadyUsernameExist) {
         return next(errorHandler(400, "Username doesnot avaiable!"));
@@ -92,22 +84,9 @@ export const fetchCurrentUser = async (req, res, next) => {
     return res.status(404).json({ message: "User profile not found" });
   }
 
-  let profilePictureUrl = null;
-
-  if (userProfile.profilePictureId) {
-    const media = await Media.findById(userProfile.profilePictureId);
-    if (media) {
-      profilePictureUrl = media.url;
-    }
-  }
-
-  //append profilepicture url also inside userprofile object
-  const userProfileData = userProfile.toObject();
-  userProfileData.profilePicture = profilePictureUrl;
-
   try {
     let responseData = {
-      user: userProfileData,
+      user: userProfile,
       message: "User profile fetched successfully",
     };
 
