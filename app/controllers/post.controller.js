@@ -357,7 +357,6 @@ export const getAllPosts = async (req, res, next) => {
     }
 
     const searchTerm = req.query.searchTerm || "";
-
     const sort = req.query.sort || "createdAt";
     const order = req.query.order || "desc";
 
@@ -368,11 +367,16 @@ export const getAllPosts = async (req, res, next) => {
     const maxPrice = parseInt(req.query.maxPrice);
     const categoryId = req.query.categoryId;
 
+    // Build the query
     const query = {
       $and: [
         { status: "published" },
-        { title: { $regex: searchTerm, $options: "i" } },
-        { description: { $regex: searchTerm, $options: "i" } },
+        {
+          $or: [
+            { title: { $regex: searchTerm, $options: "i" } },
+            { description: { $regex: searchTerm, $options: "i" } },
+          ],
+        },
         { discountStatus },
       ],
     };

@@ -37,7 +37,7 @@ const userProfileSchema = mongoose.Schema(
     },
     isEmailVerified: {
       type: Boolean,
-      default: false,
+      default: true,
     },
   },
   { timestamps: true }
