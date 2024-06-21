@@ -7,4 +7,16 @@ router.get("/:receiverId", authMiddleware, messageController.getMessages);
 
 router.post("/send/:receiverId", authMiddleware, messageController.sendMessage);
 
+router.put(
+  "/update/:messageId",
+  authMiddleware,
+  messageController.updateMessage
+);
+
+router.delete(
+  "/delete/:messageId",
+  authMiddleware,
+  messageController.deleteMessage
+);
+
 export default router;

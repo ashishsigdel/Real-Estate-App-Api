@@ -6,6 +6,7 @@ import { dbConnect } from "./app/config/dbConnect.js";
 import APIRoute from "./app/routes/index.js";
 import { errorHandler } from "./app/utils/error.js";
 import { uploadsDir } from "./app/services/fileStorageService.js";
+import setupSocket from "./socket.js";
 
 const app = express();
 
@@ -13,6 +14,9 @@ app.use(express.json());
 app.use(cookieParser());
 
 const httpServer = createServer(app);
+
+// Initialize socket.io
+const io = setupSocket(httpServer);
 
 app.use("/", express.static(uploadsDir)); // serve static files
 

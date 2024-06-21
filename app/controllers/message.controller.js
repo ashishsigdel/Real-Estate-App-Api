@@ -108,3 +108,92 @@ export const getMessages = async (req, res, next) => {
     next(error);
   }
 };
+
+export const updateMessage = async (req, res, next) => {
+  const user = req.user;
+  const { messageId } = req.params;
+  const { message } = req.body;
+
+  if (!message) {
+    return next(errorHandler(400, "Nothing to update."));
+  }
+
+  // Validate messageId
+  if (!mongoose.Types.ObjectId.isValid(messageId)) {
+    return next(errorHandler(400, "Message does not exist!"));
+  }
+
+  try {
+    const messageToUpdate = await Message.findById(messageId);
+
+    if (!messageToUpdate) {
+      return next(errorHandler(400, "Message does not exist!"));
+    }
+
+    if (!messageToUpdate.senderId.equals(user._id)) {
+      return next(
+        errorHandler(403, "You are not authorized to update this message.")
+      );
+    }
+
+    if (messageToUpdate.isEdited) {
+      return next(errorHandler(400, "This message has already been edited."));
+    }
+
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+
+    if (messageToUpdate.editAbleUntil < fiveMinutesAgo) {
+      return next(errorHandler(429, "Message cannot be edited now."));
+    }
+
+    // Update the message
+    messageToUpdate.message = message;
+    messageToUpdate.isEdited = true;
+    await messageToUpdate.save();
+
+    res
+      .status(200)
+      .json({ message: "Message updated successfully", messageToUpdate });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteMessage = async (req, res, next) => {
+  const user = req.user;
+  const { messageId } = req.params;
+
+  // Validate messageId
+  if (!mongoose.Types.ObjectId.isValid(messageId)) {
+    return next(errorHandler(400, "Message does not exist!"));
+  }
+
+  try {
+    const messageToDelete = await Message.findById(messageId);
+
+    if (!messageToDelete) {
+      return next(errorHandler(400, "Message does not exist!"));
+    }
+
+    if (!messageToDelete.senderId.equals(user._id)) {
+      return next(
+        errorHandler(403, "You are not authorized to delete this message.")
+      );
+    }
+
+    if (messageToDelete.isDeleted) {
+      return next(errorHandler(400, "This message has already been deleted."));
+    }
+
+    // Update the message
+    messageToDelete.message = "This message has been deleted.";
+    messageToDelete.isDeleted = true;
+    await messageToDelete.save();
+
+    res
+      .status(200)
+      .json({ message: "Message deleted successfully", messageToDelete });
+  } catch (error) {
+    next(error);
+  }
+};
