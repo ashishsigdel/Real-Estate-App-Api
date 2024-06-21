@@ -74,3 +74,37 @@ export const sendMessage = async (req, res, next) => {
     next(error);
   }
 };
+
+export const getMessages = async (req, res, next) => {
+  const user = req.user;
+  const { receiverId } = req.params;
+
+  const senderId = user._id;
+
+  // Validate receiverId
+  if (!mongoose.Types.ObjectId.isValid(receiverId)) {
+    return next(errorHandler(400, "Receiver does not exist!"));
+  }
+
+  try {
+    const receiver = await User.findById(receiverId);
+
+    if (!receiver) {
+      return next(errorHandler(404, "Receiver does not exist!"));
+    }
+
+    let conversation = await Conversation.findOne({
+      participants: { $all: [senderId, receiverId] },
+    }).populate("messages");
+
+    if (!conversation) {
+      return res.status(200).json([]);
+    }
+
+    const messages = conversation.messages;
+
+    res.status(200).json(messages);
+  } catch (error) {
+    next(error);
+  }
+};
