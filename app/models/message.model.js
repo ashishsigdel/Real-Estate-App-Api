@@ -12,6 +12,14 @@ const messageSchema = mongoose.Schema(
       ref: "User",
       required: true,
     },
+    isPostAttached: {
+      type: Boolean,
+      default: false,
+    },
+    postAttachedId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Post",
+    },
     message: {
       type: String,
       required: true,
