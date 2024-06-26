@@ -3,6 +3,11 @@ import MediaType from "../enums/mediaType.js";
 import Media from "../models/media.model.js";
 import User from "../models/user.model.js";
 import UserProfile from "../models/userProfile.model.js";
+import {
+  comparePassword,
+  hashPassword,
+  validatePassword,
+} from "../services/passwordService.js";
 import { errorHandler } from "../utils/error.js";
 import { createMedia, deleteMediaById } from "./media.controller.js";
 
@@ -74,6 +79,71 @@ export const updateProfile = async (req, res, next) => {
     };
 
     await res.status(200).json(responseData);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updatePassword = async (req, res, next) => {
+  try {
+    const { oldPassword, newPassword, confirmPassword } = req.body;
+
+    if (!oldPassword || !newPassword || !confirmPassword) {
+      return next(errorHandler(400, "All field are required."));
+    }
+
+    if (newPassword !== confirmPassword) {
+      return next(errorHandler(400, "Password do not match."));
+    }
+
+    const isPasswordValid = validatePassword(newPassword);
+    if (!isPasswordValid) {
+      return next(
+        errorHandler(
+          400,
+          "Password Error. Minimum 6 chars, needs uppercase, lowercase, number & symbol."
+        )
+      );
+    }
+
+    const user = req.user;
+
+    const validUser = await User.findOne({ _id: user._id });
+    if (!validUser) return next(errorHandler(404, "User not found !"));
+
+    const validPassword = await comparePassword(
+      oldPassword,
+      validUser.password
+    );
+    if (!validPassword)
+      return next(errorHandler(401, "Password is incorrect!"));
+
+    // check if password is same as previous password
+    const isSamePassword = await comparePassword(
+      newPassword,
+      validUser.password
+    );
+
+    // if password is same as previous password
+    if (isSamePassword) {
+      return next(errorHandler(400, "Password should be different."));
+    }
+
+    // hash password
+    const passwordHash = await hashPassword(newPassword);
+
+    // update user password
+    await User.findByIdAndUpdate(
+      user._id,
+      {
+        $set: {
+          password: passwordHash,
+        },
+      },
+      { new: true }
+    );
+
+    await res.status(200).json("Password Changed successfully.");
   } catch (error) {
     next(error);
   }

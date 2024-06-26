@@ -18,6 +18,7 @@ import { generateOTP } from "../utils/otpUtils.js";
 import UserProfile from "../models/userProfile.model.js";
 import { getOtpTemplate } from "../utils/htmlTemplateUtils.js";
 import { sendEmail } from "../services/emailService.js";
+import Media from "../models/media.model.js";
 
 //signup
 export const signup = async (req, res, next) => {
@@ -89,7 +90,7 @@ export const signup = async (req, res, next) => {
   try {
     await newUser.save();
     await newProfile.save();
-    res.status(201).json("User created successfully..");
+    res.status(200).json({ message: "User created successfully.." });
   } catch (error) {
     next(error);
   }
@@ -109,6 +110,10 @@ export const signin = async (req, res, next) => {
   try {
     const validUser = await User.findOne({ email });
     if (!validUser) return next(errorHandler(404, "User not found !"));
+
+    const validUserProfile = await UserProfile.findOne({ email });
+    if (!validUserProfile)
+      return next(errorHandler(404, "User profile not found !"));
 
     const validPassword = await comparePassword(password, validUser.password);
     if (!validPassword)
@@ -134,10 +139,20 @@ export const signin = async (req, res, next) => {
       refreshTokenId: savedRefreshToken._id,
     });
 
-    const { password: pass, ...user } = validUser._doc;
+    let profilePictureUrl = null;
+    if (validUserProfile.profilePictureId) {
+      const media = await Media.findById(validUserProfile.profilePictureId);
+      if (media) {
+        profilePictureUrl = media.url;
+      }
+    }
+    //append profilepicture url also inside userprofile object
+    const userProfileData = validUserProfile.toObject();
+    userProfileData.profilePicture = profilePictureUrl;
+
     let responseData = {
       accessToken,
-      user,
+      user: userProfileData,
     };
 
     res
@@ -349,6 +364,9 @@ export const sendEmailVerification = async (req, res, next) => {
 
   //generate otp
   const otp = generateOTP(6);
+  if (process.env.PUBLIC_NODE_ENV === "development") {
+    console.log(otp);
+  }
 
   const hashedOtp = await hashPassword(otp);
   const currentDate = new Date();

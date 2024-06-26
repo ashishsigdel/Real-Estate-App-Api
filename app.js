@@ -22,7 +22,7 @@ app.use("/", express.static(uploadsDir)); // serve static files
 
 app.use(
   cors({
-    origin: ["*"],
+    origin: [process.env.CORS_ORIGIN_ONE],
     methods: ["POST", "GET", "DELETE", "PUT"],
     credentials: true,
   })
