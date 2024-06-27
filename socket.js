@@ -3,7 +3,7 @@ import { Server as SocketIOServer } from "socket.io";
 const setupSocket = (httpServer) => {
   const io = new SocketIOServer(httpServer, {
     cors: {
-      origin: ["*"],
+      origin: [process.env.CORS_ORIGIN_ONE],
       methods: ["POST", "GET", "DELETE", "PUT"],
       credentials: true,
     },

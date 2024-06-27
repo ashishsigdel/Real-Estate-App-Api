@@ -25,6 +25,10 @@ export const forgotPassword = async (req, res, next) => {
     email,
   });
 
+  if (!user) {
+    return next(errorHandler(404, "User not found."));
+  }
+
   // Get total password resets request for the day
   const now = new Date();
   const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
@@ -59,6 +63,9 @@ export const forgotPassword = async (req, res, next) => {
 
   //generate otp
   const otp = generateOTP(6);
+  if (process.env.PUBLIC_NODE_ENV === "development") {
+    console.log(otp);
+  }
 
   // generate reset token
   const resetToken = uuidv4();
@@ -95,8 +102,8 @@ export const forgotPassword = async (req, res, next) => {
     });
 
     const emailContent = getOtpTemplate({
-      date: formattedDate,
-      name: userProfile.fullName,
+      date: `${formattedDate}`,
+      name: `${userProfile.fullName}`,
       description:
         "Please use the One Time Password (OTP) provided below to reset your password:",
       otp: otp,

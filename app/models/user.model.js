@@ -13,7 +13,7 @@ const userSchema = mongoose.Schema(
     },
     isEmailVerified: {
       type: Boolean,
-      default: true,
+      default: false,
     },
   },
   { timestamps: true }
