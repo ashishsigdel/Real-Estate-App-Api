@@ -21,7 +21,7 @@ export const updateProfile = async (req, res, next) => {
 
     //return response if none of the fields are provided
     if (!fullName && !phone && !gender && !profilePicture && !username) {
-      return next(errorHandler(200, "Nothings to update."));
+      return next(errorHandler(400, "Nothings to update."));
     }
 
     // get user profile
@@ -54,7 +54,7 @@ export const updateProfile = async (req, res, next) => {
     };
 
     if (username) {
-      const alreadyUsernameExist = await User.findOne({ username });
+      const alreadyUsernameExist = await UserProfile.findOne({ username });
 
       if (alreadyUsernameExist) {
         return next(errorHandler(400, "Username doesnot avaiable!"));
@@ -73,9 +73,20 @@ export const updateProfile = async (req, res, next) => {
       { new: true }
     );
 
+    let profilePictureUrl = null;
+    if (updatedUserProfile.profilePictureId) {
+      const media = await Media.findById(updatedUserProfile.profilePictureId);
+      if (media) {
+        profilePictureUrl = media.url;
+      }
+    }
+    //append profilepicture url also inside userprofile object
+    const userProfileData = updatedUserProfile.toObject();
+    userProfileData.profilePicture = profilePictureUrl;
+
     const responseData = {
       message: "Profile updated successfully",
-      userProfile: updatedUserProfile,
+      userProfile: userProfileData,
     };
 
     await res.status(200).json(responseData);
@@ -153,6 +164,41 @@ export const fetchCurrentUser = async (req, res, next) => {
   const user = req.user;
 
   const userProfile = await UserProfile.findOne({ userId: user._id });
+
+  if (!userProfile) {
+    return res.status(404).json({ message: "User profile not found" });
+  }
+
+  let profilePictureUrl = null;
+
+  if (userProfile.profilePictureId) {
+    const media = await Media.findById(userProfile.profilePictureId);
+    if (media) {
+      profilePictureUrl = media.url;
+    }
+  }
+
+  //append profilepicture url also inside userprofile object
+  const userProfileData = userProfile.toObject();
+  userProfileData.profilePicture = profilePictureUrl;
+
+  try {
+    let responseData = {
+      user: userProfileData,
+      message: "User profile fetched successfully",
+    };
+
+    res.status(201).json(responseData);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const fetchProfile = async (req, res, next) => {
+  const { username } = req.params;
+  const userProfile = await UserProfile.findOne({ username }).select(
+    "-createdAt -isEmailVerified -updatedAt "
+  );
 
   if (!userProfile) {
     return res.status(404).json({ message: "User profile not found" });

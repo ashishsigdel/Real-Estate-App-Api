@@ -5,6 +5,8 @@ import { authMiddleware } from "../middlewares/auth.middleware.js";
 import { uploadImageMiddleware } from "../middlewares/multer.middleware.js";
 import FileStorageDirectory from "../enums/fileStorageDirectory.js";
 
+router.get("/profile/:username", userController.fetchProfile);
+
 router.put(
   "/profile",
   authMiddleware,
