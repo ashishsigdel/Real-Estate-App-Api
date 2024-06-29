@@ -95,7 +95,38 @@ export const getMessages = async (req, res, next) => {
 
     let conversation = await Conversation.findOne({
       participants: { $all: [senderId, receiverId] },
-    }).populate("messages");
+    }).populate({
+      path: "messages",
+      model: "Message",
+      populate: [
+        {
+          path: "receiverId",
+          model: "User",
+          populate: {
+            path: "userProfileId",
+            model: "UserProfile",
+            select: "fullName username email phone gender dob profilePictureId",
+            populate: {
+              path: "profilePictureId",
+              model: "Media",
+            },
+          },
+        },
+        {
+          path: "senderId",
+          model: "User",
+          populate: {
+            path: "userProfileId",
+            model: "UserProfile",
+            select: "fullName username email phone gender dob profilePictureId",
+            populate: {
+              path: "profilePictureId",
+              model: "Media",
+            },
+          },
+        },
+      ],
+    });
 
     if (!conversation) {
       return res.status(200).json([]);

@@ -228,3 +228,34 @@ export const fetchProfile = async (req, res, next) => {
     next(error);
   }
 };
+export const fetchProfileById = async (req, res, next) => {
+  const { userId } = req.params;
+
+  try {
+    const user = await User.findOne({ _id: userId })
+      .select("_id")
+      .populate({
+        path: "userProfileId",
+        model: "UserProfile",
+        select: "-isEmailVerified -createdAt -updatedAt",
+        populate: {
+          path: "profilePictureId",
+          model: "Media",
+        },
+      })
+      .exec();
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const responseData = {
+      user,
+      message: "User profile fetched successfully",
+    };
+
+    res.status(200).json(responseData);
+  } catch (error) {
+    next(error);
+  }
+};

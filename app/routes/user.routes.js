@@ -7,6 +7,8 @@ import FileStorageDirectory from "../enums/fileStorageDirectory.js";
 
 router.get("/profile/:username", userController.fetchProfile);
 
+router.get("/profile-by-id/:userId", userController.fetchProfileById);
+
 router.put(
   "/profile",
   authMiddleware,
