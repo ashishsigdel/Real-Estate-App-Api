@@ -33,11 +33,13 @@ const userProfileSchema = mongoose.Schema(
       type: Date,
     },
     profilePictureId: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Media",
     },
     isEmailVerified: {
       type: Boolean,
-      default: false,
+      // default: false,
+      default: true,
     },
   },
   { timestamps: true }

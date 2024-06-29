@@ -91,6 +91,11 @@ export const signup = async (req, res, next) => {
   try {
     await newUser.save();
     await newProfile.save();
+
+    await User.findByIdAndUpdate(newUser._id, {
+      $set: { userProfileId: newProfile._id },
+    });
+
     res.status(200).json({ message: "User created successfully.." });
   } catch (error) {
     next(error);

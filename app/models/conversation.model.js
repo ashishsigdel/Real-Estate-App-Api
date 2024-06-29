@@ -8,6 +8,12 @@ const conversationSchema = mongoose.Schema(
         ref: "User",
       },
     ],
+    participantsProfile: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "UserProfile",
+      },
+    ],
     messages: [
       {
         type: mongoose.Schema.Types.ObjectId,
