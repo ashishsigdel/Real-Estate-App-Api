@@ -69,7 +69,38 @@ export const sendMessage = async (req, res, next) => {
       participants: { $all: [senderId, receiverId] },
     });
 
-    res.status(200).json({ newMessage, message: "message sent", conversation });
+    const populatedMessage = await Message.findById(newMessage._id).populate([
+      {
+        path: "receiverId",
+        model: "User",
+        select: "_id userProfileId",
+        populate: {
+          path: "userProfileId",
+          model: "UserProfile",
+          select: "fullName username email phone gender dob profilePictureId",
+          populate: {
+            path: "profilePictureId",
+            model: "Media",
+          },
+        },
+      },
+      {
+        path: "senderId",
+        model: "User",
+        select: "_id userProfileId",
+        populate: {
+          path: "userProfileId",
+          model: "UserProfile",
+          select: "fullName username email phone gender dob profilePictureId",
+          populate: {
+            path: "profilePictureId",
+            model: "Media",
+          },
+        },
+      },
+    ]);
+
+    res.status(200).json(populatedMessage);
   } catch (error) {
     next(error);
   }
@@ -102,6 +133,7 @@ export const getMessages = async (req, res, next) => {
         {
           path: "receiverId",
           model: "User",
+          select: "_id userProfileId",
           populate: {
             path: "userProfileId",
             model: "UserProfile",
@@ -115,6 +147,7 @@ export const getMessages = async (req, res, next) => {
         {
           path: "senderId",
           model: "User",
+          select: "_id userProfileId",
           populate: {
             path: "userProfileId",
             model: "UserProfile",
@@ -182,9 +215,7 @@ export const updateMessage = async (req, res, next) => {
     messageToUpdate.isEdited = true;
     await messageToUpdate.save();
 
-    res
-      .status(200)
-      .json({ message: "Message updated successfully", messageToUpdate });
+    res.status(200).json(messageToUpdate);
   } catch (error) {
     next(error);
   }
@@ -221,9 +252,7 @@ export const deleteMessage = async (req, res, next) => {
     messageToDelete.isDeleted = true;
     await messageToDelete.save();
 
-    res
-      .status(200)
-      .json({ message: "Message deleted successfully", messageToDelete });
+    res.status(200).json(messageToDelete);
   } catch (error) {
     next(error);
   }
