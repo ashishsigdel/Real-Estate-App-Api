@@ -3,6 +3,9 @@ import User from "../models/user.model.js";
 import { errorHandler } from "../utils/error.js";
 import Conversation from "../models/conversation.model.js";
 import Message from "../models/message.model.js";
+import setupSocket from "../../socket.js";
+
+const { io, getReceiverSocketId } = setupSocket();
 
 export const sendMessage = async (req, res, next) => {
   const user = req.user;
@@ -57,8 +60,6 @@ export const sendMessage = async (req, res, next) => {
       conversation.messages.push(newMessage._id);
     }
 
-    //socket io here later
-
     // await conversation.save();
     // await newMessage.save();
 
@@ -99,6 +100,12 @@ export const sendMessage = async (req, res, next) => {
         },
       },
     ]);
+
+    //socket io here later
+    const receiverSocketId = getReceiverSocketId(receiverId);
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit("newMessage", populatedMessage);
+    }
 
     res.status(200).json(populatedMessage);
   } catch (error) {
