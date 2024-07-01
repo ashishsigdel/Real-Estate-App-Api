@@ -16,7 +16,7 @@ app.use(cookieParser());
 const httpServer = createServer(app);
 
 // Initialize socket.io
-const io = setupSocket(httpServer);
+const { io } = setupSocket(httpServer);
 
 app.use("/", express.static(uploadsDir)); // serve static files
 

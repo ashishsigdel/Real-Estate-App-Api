@@ -3,7 +3,7 @@ import { Server as SocketIOServer } from "socket.io";
 const setupSocket = (httpServer) => {
   const io = new SocketIOServer(httpServer, {
     cors: {
-      origin: process.env.CORS_ORIGIN_ONE,
+      origin: [process.env.CORS_ORIGIN_ONE, process.env.CORS_ORIGIN_TWO],
       methods: ["POST", "GET", "DELETE", "PUT"],
       credentials: true,
     },
@@ -16,9 +16,8 @@ const setupSocket = (httpServer) => {
 
     socket.on("disconnect", () => {
       console.log(`Client disconnected: ${socket.id}`);
-      // Clean up userSocketMap when socket disconnects
       for (const userId in userSocketMap) {
-        if (userSocketMap[userId] === socket) {
+        if (userSocketMap[userId] === socket.id) {
           delete userSocketMap[userId];
           break;
         }
@@ -26,8 +25,7 @@ const setupSocket = (httpServer) => {
     });
 
     socket.on("setUserId", (userId) => {
-      // Map user ID to socket
-      userSocketMap[userId] = socket;
+      userSocketMap[userId] = socket.id;
     });
   });
 
