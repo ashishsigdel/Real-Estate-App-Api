@@ -16,13 +16,13 @@ app.use(cookieParser());
 const httpServer = createServer(app);
 
 // Initialize socket.io
-const io = setupSocket(httpServer);
+const { io } = setupSocket(httpServer);
 
 app.use("/", express.static(uploadsDir)); // serve static files
 
 app.use(
   cors({
-    origin: [process.env.CORS_ORIGIN_ONE],
+    origin: [process.env.CORS_ORIGIN_ONE, process.env.CORS_ORIGIN_TWO],
     methods: ["POST", "GET", "DELETE", "PUT"],
     credentials: true,
   })

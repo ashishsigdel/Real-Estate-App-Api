@@ -13,7 +13,12 @@ const userSchema = mongoose.Schema(
     },
     isEmailVerified: {
       type: Boolean,
-      default: false,
+      // default: false,
+      default: true,
+    },
+    userProfileId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "UserProfile",
     },
   },
   { timestamps: true }

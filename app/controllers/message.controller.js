@@ -3,6 +3,9 @@ import User from "../models/user.model.js";
 import { errorHandler } from "../utils/error.js";
 import Conversation from "../models/conversation.model.js";
 import Message from "../models/message.model.js";
+import setupSocket from "../../socket.js";
+
+const { io, getReceiverSocketId } = setupSocket();
 
 export const sendMessage = async (req, res, next) => {
   const user = req.user;
@@ -57,8 +60,6 @@ export const sendMessage = async (req, res, next) => {
       conversation.messages.push(newMessage._id);
     }
 
-    //socket io here later
-
     // await conversation.save();
     // await newMessage.save();
 
@@ -69,7 +70,44 @@ export const sendMessage = async (req, res, next) => {
       participants: { $all: [senderId, receiverId] },
     });
 
-    res.status(200).json({ newMessage, message: "message sent", conversation });
+    const populatedMessage = await Message.findById(newMessage._id).populate([
+      {
+        path: "receiverId",
+        model: "User",
+        select: "_id userProfileId",
+        populate: {
+          path: "userProfileId",
+          model: "UserProfile",
+          select: "fullName username email phone gender dob profilePictureId",
+          populate: {
+            path: "profilePictureId",
+            model: "Media",
+          },
+        },
+      },
+      {
+        path: "senderId",
+        model: "User",
+        select: "_id userProfileId",
+        populate: {
+          path: "userProfileId",
+          model: "UserProfile",
+          select: "fullName username email phone gender dob profilePictureId",
+          populate: {
+            path: "profilePictureId",
+            model: "Media",
+          },
+        },
+      },
+    ]);
+
+    //socket io here later
+    const receiverSocketId = getReceiverSocketId(receiverId);
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit("newMessage", populatedMessage);
+    }
+
+    res.status(200).json(populatedMessage);
   } catch (error) {
     next(error);
   }
@@ -95,7 +133,40 @@ export const getMessages = async (req, res, next) => {
 
     let conversation = await Conversation.findOne({
       participants: { $all: [senderId, receiverId] },
-    }).populate("messages");
+    }).populate({
+      path: "messages",
+      model: "Message",
+      populate: [
+        {
+          path: "receiverId",
+          model: "User",
+          select: "_id userProfileId",
+          populate: {
+            path: "userProfileId",
+            model: "UserProfile",
+            select: "fullName username email phone gender dob profilePictureId",
+            populate: {
+              path: "profilePictureId",
+              model: "Media",
+            },
+          },
+        },
+        {
+          path: "senderId",
+          model: "User",
+          select: "_id userProfileId",
+          populate: {
+            path: "userProfileId",
+            model: "UserProfile",
+            select: "fullName username email phone gender dob profilePictureId",
+            populate: {
+              path: "profilePictureId",
+              model: "Media",
+            },
+          },
+        },
+      ],
+    });
 
     if (!conversation) {
       return res.status(200).json([]);
@@ -151,9 +222,7 @@ export const updateMessage = async (req, res, next) => {
     messageToUpdate.isEdited = true;
     await messageToUpdate.save();
 
-    res
-      .status(200)
-      .json({ message: "Message updated successfully", messageToUpdate });
+    res.status(200).json(messageToUpdate);
   } catch (error) {
     next(error);
   }
@@ -190,9 +259,7 @@ export const deleteMessage = async (req, res, next) => {
     messageToDelete.isDeleted = true;
     await messageToDelete.save();
 
-    res
-      .status(200)
-      .json({ message: "Message deleted successfully", messageToDelete });
+    res.status(200).json(messageToDelete);
   } catch (error) {
     next(error);
   }
