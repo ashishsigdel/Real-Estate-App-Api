@@ -28,9 +28,9 @@ export const createCountry = async (req, res, next) => {
 
 export const allCountry = async (req, res, next) => {
   try {
-    const categories = await Country.find();
+    const countries = await Country.find();
 
-    res.status(200).json(categories);
+    res.status(200).json({ data: countries });
   } catch (error) {
     next(error);
   }

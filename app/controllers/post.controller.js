@@ -29,36 +29,36 @@ export const createPost = async (req, res, next) => {
   } = req.body;
 
   if (!title) {
-    return next(errorHandler(401, "title is required."));
+    return next(errorHandler(401, "Title is required."));
   }
 
   if (!description) {
-    return next(errorHandler(401, "description is required."));
+    return next(errorHandler(401, "Description is required."));
   }
 
   if (!city) {
-    return next(errorHandler(401, "city is required."));
+    return next(errorHandler(401, "City is required."));
   }
 
   if (!address) {
-    return next(errorHandler(401, "address is required."));
+    return next(errorHandler(401, "Address is required."));
   }
 
   if (!category) {
-    return next(errorHandler(401, "category is required."));
+    return next(errorHandler(401, "Category is required."));
   }
 
   if (!country) {
-    return next(errorHandler(401, "country is required."));
+    return next(errorHandler(401, "Country is required."));
   }
 
   if (!price) {
-    return next(errorHandler(401, "price is required."));
+    return next(errorHandler(401, "Price is required."));
   }
 
-  if (discountStatus && !discountPrice) {
-    return next(errorHandler(401, "discountPrice is required."));
-  }
+  // if (discountStatus && !discountPrice) {
+  //   return next(errorHandler(401, "DiscountPrice is required."));
+  // }
 
   if (mediaFiles.length === 0) {
     return next(errorHandler(401, "At least one media file is required."));
