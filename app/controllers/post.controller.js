@@ -29,36 +29,36 @@ export const createPost = async (req, res, next) => {
   } = req.body;
 
   if (!title) {
-    return next(errorHandler(401, "title is required."));
+    return next(errorHandler(401, "Title is required."));
   }
 
   if (!description) {
-    return next(errorHandler(401, "description is required."));
+    return next(errorHandler(401, "Description is required."));
   }
 
   if (!city) {
-    return next(errorHandler(401, "city is required."));
+    return next(errorHandler(401, "City is required."));
   }
 
   if (!address) {
-    return next(errorHandler(401, "address is required."));
+    return next(errorHandler(401, "Address is required."));
   }
 
   if (!category) {
-    return next(errorHandler(401, "category is required."));
+    return next(errorHandler(401, "Category is required."));
   }
 
   if (!country) {
-    return next(errorHandler(401, "country is required."));
+    return next(errorHandler(401, "Country is required."));
   }
 
   if (!price) {
-    return next(errorHandler(401, "price is required."));
+    return next(errorHandler(401, "Price is required."));
   }
 
-  if (discountStatus && !discountPrice) {
-    return next(errorHandler(401, "discountPrice is required."));
-  }
+  // if (discountStatus && !discountPrice) {
+  //   return next(errorHandler(401, "DiscountPrice is required."));
+  // }
 
   if (mediaFiles.length === 0) {
     return next(errorHandler(401, "At least one media file is required."));
@@ -273,7 +273,17 @@ export const getPost = async (req, res, next) => {
   }
 
   try {
-    const validatePost = await Post.findOne({ _id: postId });
+    const validatePost = await Post.findOne({ _id: postId })
+      .populate({
+        path: "categoryId",
+        model: "PostCategory",
+        select: "name",
+      })
+      .populate({
+        path: "countryId",
+        model: "Country",
+        select: "name",
+      });
     if (!validatePost) {
       return next(errorHandler(404, "Post not found."));
     }
@@ -314,6 +324,16 @@ export const getAllPostsByCretor = async (req, res, next) => {
     const startIndex = parseInt(req.query.startIndex) || 0;
 
     const posts = await Post.find({ userId: user._id })
+      .populate({
+        path: "categoryId",
+        model: "PostCategory",
+        select: "name",
+      })
+      .populate({
+        path: "countryId",
+        model: "Country",
+        select: "name",
+      })
       .limit(limit)
       .skip(startIndex);
 
@@ -406,6 +426,16 @@ export const getAllPosts = async (req, res, next) => {
     }
 
     const posts = await Post.find(query)
+      .populate({
+        path: "categoryId",
+        model: "PostCategory",
+        select: "name",
+      })
+      .populate({
+        path: "countryId",
+        model: "Country",
+        select: "name",
+      })
       .sort({ [sort]: order === "asc" ? 1 : -1 })
       .limit(limit)
       .skip(startIndex);

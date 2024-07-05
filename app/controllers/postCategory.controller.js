@@ -28,7 +28,7 @@ export const allPostCategory = async (req, res, next) => {
   try {
     const categories = await PostCategory.find();
 
-    res.status(200).json(categories);
+    res.status(200).json({ data: categories });
   } catch (error) {
     next(error);
   }
