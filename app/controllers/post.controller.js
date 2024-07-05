@@ -273,7 +273,17 @@ export const getPost = async (req, res, next) => {
   }
 
   try {
-    const validatePost = await Post.findOne({ _id: postId });
+    const validatePost = await Post.findOne({ _id: postId })
+      .populate({
+        path: "categoryId",
+        model: "PostCategory",
+        select: "name",
+      })
+      .populate({
+        path: "countryId",
+        model: "Country",
+        select: "name",
+      });
     if (!validatePost) {
       return next(errorHandler(404, "Post not found."));
     }
@@ -314,6 +324,16 @@ export const getAllPostsByCretor = async (req, res, next) => {
     const startIndex = parseInt(req.query.startIndex) || 0;
 
     const posts = await Post.find({ userId: user._id })
+      .populate({
+        path: "categoryId",
+        model: "PostCategory",
+        select: "name",
+      })
+      .populate({
+        path: "countryId",
+        model: "Country",
+        select: "name",
+      })
       .limit(limit)
       .skip(startIndex);
 
@@ -406,6 +426,16 @@ export const getAllPosts = async (req, res, next) => {
     }
 
     const posts = await Post.find(query)
+      .populate({
+        path: "categoryId",
+        model: "PostCategory",
+        select: "name",
+      })
+      .populate({
+        path: "countryId",
+        model: "Country",
+        select: "name",
+      })
       .sort({ [sort]: order === "asc" ? 1 : -1 })
       .limit(limit)
       .skip(startIndex);
